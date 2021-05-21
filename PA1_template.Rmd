@@ -1,0 +1,117 @@
+---
+title: "Report_Project_1"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## Background/Introduction
+It is now possible to collect a large amount of data about personal movement using activity monitoring devices such as a Fitbit, Nike Fuelband, or Jawbone Up. These type of devices are part of the “quantified self” movement – a group of enthusiasts who take measurements about themselves regularly to improve their health, to find patterns in their behavior, or because they are tech geeks. But these data remain under-utilized both because the raw data are hard to obtain and there is a lack of statistical methods and software for processing and interpreting the data.  
+  
+This assignment makes use of data from a personal activity monitoring device. This device collects data at 5 minute intervals through out the day. The data consists of two months of data from an anonymous individual collected during the months of October and November, 2012 and include the number of steps taken in 5 minute intervals each day.  
+
+## Load the data  
+Load the data for review via the following code, and get a summary to have a basic idea of the data
+```{r}
+ori_data <- read.csv("activity.csv")
+summary(ori_data)
+colMeans(is.na(ori_data))
+```
+So there are a lot of NAs in the steps column and the percentage is about 13.1%.
+
+# First Question - What is mean total number of steps taken per day?
+To get rid of all the rows with NAs, using the following code:
+```{r}
+data_nNA <- na.omit(ori_data)
+summary(data_nNA)
+```
+Then the steps column should be split based on the date column, then use sapply to sum the steps of each day. And then we can get the Histogram of the total number of steps taken each day and Mean and median number of steps taken each day.
+```{r}
+s_steps <- split(data_nNA$steps,data_nNA$date)
+s_perday <- sapply(s_steps, sum)
+summary(s_perday)
+hist(s_perday, main = "Total steps of each day", xlab = "Total steps of a day")
+```  
+  
+So, the median of the total steps per day is 10765, and the mean is 10766.
+
+# Second Question - What is the average daily activity pattern?
+Similar as the last question, the steps column should be split based on the interval column and the average of the each interval can be calculated. And based on that, the plot can be created
+```{r}
+a_steps <- split(data_nNA$steps,data_nNA$interval)
+a_perinte <- lapply(a_steps, mean)
+plot(names(a_perinte), a_perinte, type = "l", xlab = "5 Mins Interval of a day", ylab = "Average steps with in the interval")
+```
+
+# Third Question - Imputing missing values
+Based on the summary of the original data, the number of NAs can be easily found.
+```{r}
+summary(ori_data)
+```
+The summary indicates there are 2304 rows of NAs in the steps column. And there are 17568 rows of observations in the data.  
+To replace thoes NAs, the average interval steps values will be used in this project.
+```{r}
+length(unique(ori_data$date))
+length(unique(ori_data$interval))
+```
+The code above indicates there are 61 days in the data set and each day is separated into 288 intervals.  
+The average interval steps will be append to the ori_data and use to compare with the data in steps column.
+```{r}
+in_a_steps <- t(data.frame(rep(a_perinte,61)))
+rNA_data <- cbind(ori_data,in_a_steps)
+head(rNA_data)
+```
+Then, while loop will be used, when the values in steps are NAs, replace it with the value in the in_a_steps column.
+```{r}
+n <- 1
+while (n <= 17568) {
+  if(is.na(rNA_data[n,1])){
+    rNA_data[n,1] <- rNA_data[n,4]
+  }
+  n <- n + 1
+}
+summary(rNA_data)
+```
+Based on the summary, there is no more NAs in the new data set. Following the same approach as the first question, we can easily create the histogram and report the median and mean of the total daily steps.
+```{r}
+ns_steps <- split(rNA_data$steps,rNA_data$date)
+ns_perday <- sapply(ns_steps, sum)
+summary(ns_perday)
+hist(ns_perday, main = "Total steps of each day", xlab = "Total steps of a day")
+``` 
+  
+Now, the median and mean are all 10766, which is not to much different from the original data set.
+
+To evaluate the date column, first transform the date column to date format then append the weekdays or weekends of each day as the new colomn to the data set.
+```{r}
+week_day <- weekdays(strptime(rNA_data$date,"%Y-%m-%d"))
+rNA_data$weekday <- week_day
+head(rNA_data)
+```
+Then, using the while loop, we can replace the weekday column with "weekdays" or "weekend"
+```{r}
+n <- 1
+while (n <= 17568) {
+  if(rNA_data[n,5] %in% c("Saturday", "Sunday")){
+    rNA_data[n,5] <- "weekend"
+  }else{
+    rNA_data[n,5] <- "weekday"
+  }
+  n <- n + 1
+}
+```
+Use the dplyr package to create a new data set to summarize the steps by both weekdays and the intervals. Then use ggplot to plot the two plots with the facet option.
+```{r}
+library(dplyr)
+library(ggplot2)
+mean_step_week <- rNA_data %>%
+    group_by(weekday, interval) %>%
+    summarize(mean_steps=mean(steps))
+
+ggplot(data = mean_step_week, aes(x = interval, y = mean_steps)) + 
+  geom_line() + facet_grid(weekday ~ .) +
+  labs(title = "Average steps in weekdays and weekend", y = "Average Steps")
+```
+Therefore, we can see that the average steps in weekend is less than that in weekdays.

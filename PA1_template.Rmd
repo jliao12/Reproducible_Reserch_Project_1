@@ -33,8 +33,6 @@ s_steps <- split(data_nNA$steps,data_nNA$date)
 s_perday <- sapply(s_steps, sum)
 summary(s_perday)
 hist(s_perday, main = "Total steps of each day", xlab = "Total steps of a day")
-dev.copy(png, file = "plot1.png")
-dev.off()
 ```  
   
 So, the median of the total steps per day is 10765, and the mean is 10766.
@@ -45,9 +43,12 @@ Similar as the last question, the steps column should be split based on the inte
 a_steps <- split(data_nNA$steps,data_nNA$interval)
 a_perinte <- lapply(a_steps, mean)
 plot(names(a_perinte), a_perinte, type = "l", xlab = "5 Mins Interval of a day", ylab = "Average steps with in the interval")
-dev.copy(png, file = "plot2.png")
-dev.off()
 ```
+And the maximum steps can be found in the interval with the following code:
+```{r}
+a_perinte[which.max(as.numeric(a_perinte))]
+```
+Therefore, the max average steps is 206.2 and it occurs at the 835 minutes interval.
 
 # Third Question - Imputing missing values
 Based on the summary of the original data, the number of NAs can be easily found.
@@ -84,8 +85,6 @@ ns_steps <- split(rNA_data$steps,rNA_data$date)
 ns_perday <- sapply(ns_steps, sum)
 summary(ns_perday)
 hist(ns_perday, main = "Total steps of each day", xlab = "Total steps of a day")
-dev.copy(png, file = "plot3.png")
-dev.off()
 ``` 
   
 Now, the median and mean are all 10766, which is not to much different from the original data set.
@@ -119,6 +118,6 @@ mean_step_week <- rNA_data %>%
 ggplot(data = mean_step_week, aes(x = interval, y = mean_steps)) + 
   geom_line() + facet_grid(weekday ~ .) +
   labs(title = "Average steps in weekdays and weekend", y = "Average Steps")
-ggsave("plot4.png")
 ```
+  
 Therefore, we can see that the average steps in weekend is less than that in weekdays.
